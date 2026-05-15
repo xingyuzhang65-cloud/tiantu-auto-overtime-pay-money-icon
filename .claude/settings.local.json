@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Out-Null *)",
+      "PowerShell(New-Item *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git config *)",
+      "Bash(git push *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx gh-pages *)",
+      "Bash(git branch *)"
+    ]
+  }
+}
