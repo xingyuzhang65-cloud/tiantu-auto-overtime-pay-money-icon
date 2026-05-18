@@ -322,7 +322,7 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
             onChange={(checked) => {
               setTimePromiseEnabled(checked)
               if (!checked) {
-                form.resetFields(['timeStartNode', 'timeEndNode', 'promiseDays'])
+                form.resetFields(['timeStartNode', 'timeEndNode', 'promiseDays', 'storageLocations'])
               }
             }}
           />
@@ -375,6 +375,83 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
                 precision={0}
                 addonAfter="天"
                 disabled={!timePromiseEnabled}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={24}>
+          <Col span={12}>
+            <Form.Item
+              name="storageLocations"
+              label="库点"
+              rules={timePromiseEnabled ? [{ required: true, message: '请选择库点' }] : []}
+            >
+              <Select
+                mode="multiple"
+                placeholder="请选择库点"
+                disabled={!timePromiseEnabled}
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={[
+                  { label: 'ONT8', value: 'ONT8' },
+                  { label: 'LGB8', value: 'LGB8' },
+                  { label: 'LAX9', value: 'LAX9' },
+                  { label: 'SBD1', value: 'SBD1' },
+                  { label: 'GYR3', value: 'GYR3' },
+                  { label: 'PHX7', value: 'PHX7' },
+                  { label: 'LAS1', value: 'LAS1' },
+                  { label: 'SMF3', value: 'SMF3' },
+                  { label: 'OAK3', value: 'OAK3' },
+                  { label: 'PDX9', value: 'PDX9' },
+                  { label: 'BFI3', value: 'BFI3' },
+                  { label: 'SLC3', value: 'SLC3' },
+                  { label: 'DEN3', value: 'DEN3' },
+                  { label: 'MCI1', value: 'MCI1' },
+                  { label: 'STL4', value: 'STL4' },
+                  { label: 'ORD5', value: 'ORD5' },
+                  { label: 'MDW6', value: 'MDW6' },
+                  { label: 'IND9', value: 'IND9' },
+                  { label: 'CMH3', value: 'CMH3' },
+                  { label: 'DTW3', value: 'DTW3' },
+                  { label: 'CLE3', value: 'CLE3' },
+                  { label: 'BNA3', value: 'BNA3' },
+                  { label: 'MEM1', value: 'MEM1' },
+                  { label: 'ATL8', value: 'ATL8' },
+                  { label: 'MCO2', value: 'MCO2' },
+                  { label: 'MIA1', value: 'MIA1' },
+                  { label: 'TPA2', value: 'TPA2' },
+                  { label: 'CLT2', value: 'CLT2' },
+                  { label: 'RDU5', value: 'RDU5' },
+                  { label: 'BWI2', value: 'BWI2' },
+                  { label: 'PHL4', value: 'PHL4' },
+                  { label: 'EWR9', value: 'EWR9' },
+                  { label: 'BOS7', value: 'BOS7' },
+                  { label: 'DFW6', value: 'DFW6' },
+                  { label: 'HOU8', value: 'HOU8' },
+                  { label: 'SAT4', value: 'SAT4' },
+                  { label: 'ABE8', value: 'ABE8' },
+                  { label: 'AVP1', value: 'AVP1' },
+                  { label: 'TEB9', value: 'TEB9' },
+                  { label: 'PIT5', value: 'PIT5' },
+                  { label: 'MGE3', value: 'MGE3' },
+                  { label: 'JAX3', value: 'JAX3' },
+                  { label: 'SAV3', value: 'SAV3' },
+                  { label: 'CHA2', value: 'CHA2' },
+                  { label: 'GSP1', value: 'GSP1' },
+                  { label: 'BFL1', value: 'BFL1' },
+                  { label: 'FAT2', value: 'FAT2' },
+                  { label: 'RNO4', value: 'RNO4' },
+                  { label: 'BOI2', value: 'BOI2' },
+                  { label: 'TUL2', value: 'TUL2' },
+                  { label: 'OKC2', value: 'OKC2' },
+                  { label: 'ABQ2', value: 'ABQ2' },
+                  { label: 'ELP1', value: 'ELP1' },
+                  { label: 'HSV1', value: 'HSV1' },
+                  { label: 'RIC1', value: 'RIC1' },
+                  { label: 'ORF2', value: 'ORF2' },
+                ]}
               />
             </Form.Item>
           </Col>
