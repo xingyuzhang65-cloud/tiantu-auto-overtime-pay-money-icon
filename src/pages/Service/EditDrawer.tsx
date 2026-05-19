@@ -55,7 +55,7 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
 
   return (
     <Drawer
-      title="编辑服务"
+      title={record ? '编辑服务' : '创建服务'}
       open={open}
       onClose={onClose}
       width={900}
