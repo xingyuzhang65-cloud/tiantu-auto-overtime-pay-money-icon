@@ -75,7 +75,7 @@ const mockData: WaybillRecord[] = [
     status: '运输中',
     createTime: '2026-05-15 08:30:00',
     isOvertime: true,
-    timeoutInfo: { startNode: '起运', endNode: '到港', promiseDays: 18, actualDays: 22 },
+    timeoutInfo: { startNode: '出运', endNode: '提取', promiseDays: 18, actualDays: 22 },
   },
   {
     key: '2',
@@ -131,7 +131,7 @@ const mockData: WaybillRecord[] = [
     status: '已揽收',
     createTime: '2026-05-15 09:15:00',
     isOvertime: true,
-    timeoutInfo: { startNode: '入库', endNode: '签收', promiseDays: 25, actualDays: 30 },
+    timeoutInfo: { startNode: '开船', endNode: '入仓', promiseDays: 25, actualDays: 30 },
   },
   {
     key: '5',

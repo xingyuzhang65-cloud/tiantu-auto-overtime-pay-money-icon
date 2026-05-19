@@ -335,13 +335,9 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
               rules={timePromiseEnabled ? [{ required: true, message: '请选择' }] : []}
             >
               <Select placeholder="请选择" disabled={!timePromiseEnabled}>
-                <Select.Option value="提货">提货</Select.Option>
-                <Select.Option value="入库">入库</Select.Option>
-                <Select.Option value="出港">出港</Select.Option>
-                <Select.Option value="起运">起运</Select.Option>
-                <Select.Option value="到港">到港</Select.Option>
-                <Select.Option value="清关完成">清关完成</Select.Option>
-                <Select.Option value="派送中">派送中</Select.Option>
+                <Select.Option value="出运">出运</Select.Option>
+                <Select.Option value="开船">开船</Select.Option>
+                <Select.Option value="起飞">起飞</Select.Option>
               </Select>
             </Form.Item>
           </Col>
@@ -352,10 +348,8 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
               rules={timePromiseEnabled ? [{ required: true, message: '请选择' }] : []}
             >
               <Select placeholder="请选择" disabled={!timePromiseEnabled}>
-                <Select.Option value="到港">到港</Select.Option>
-                <Select.Option value="清关完成">清关完成</Select.Option>
-                <Select.Option value="派送中">派送中</Select.Option>
-                <Select.Option value="签收">签收</Select.Option>
+                <Select.Option value="提取">提取</Select.Option>
+                <Select.Option value="入仓">入仓</Select.Option>
               </Select>
             </Form.Item>
           </Col>

@@ -47,6 +47,10 @@ interface ServiceRecord {
   bubbleRatio: number
   currency: string
   status: '启用' | '停用'
+  timeStartNode: string
+  timeEndNode: string
+  promiseDays: number
+  storageLocations: string
 }
 
 const mockData: ServiceRecord[] = [
@@ -63,6 +67,10 @@ const mockData: ServiceRecord[] = [
     bubbleRatio: 6000,
     currency: 'USD',
     status: '停用',
+    timeStartNode: '出运',
+    timeEndNode: '提取',
+    promiseDays: 18,
+    storageLocations: 'ONT8,LGB8',
   },
   {
     key: '2',
@@ -77,6 +85,10 @@ const mockData: ServiceRecord[] = [
     bubbleRatio: 6000,
     currency: 'USD',
     status: '停用',
+    timeStartNode: '起飞',
+    timeEndNode: '入仓',
+    promiseDays: 10,
+    storageLocations: 'LAX9,SBD1',
   },
   {
     key: '3',
@@ -91,6 +103,10 @@ const mockData: ServiceRecord[] = [
     bubbleRatio: 6000,
     currency: 'GBP',
     status: '停用',
+    timeStartNode: '开船',
+    timeEndNode: '提取',
+    promiseDays: 25,
+    storageLocations: 'BHX4,MAN4',
   },
   {
     key: '4',
@@ -105,6 +121,10 @@ const mockData: ServiceRecord[] = [
     bubbleRatio: 5000,
     currency: 'USD',
     status: '停用',
+    timeStartNode: '出运',
+    timeEndNode: '入仓',
+    promiseDays: 20,
+    storageLocations: 'ONT8',
   },
   {
     key: '5',
@@ -119,6 +139,10 @@ const mockData: ServiceRecord[] = [
     bubbleRatio: 5000,
     currency: 'USD',
     status: '停用',
+    timeStartNode: '起飞',
+    timeEndNode: '提取',
+    promiseDays: 12,
+    storageLocations: 'GYR3,PHX7,LAS1',
   },
 ]
 
@@ -147,8 +171,8 @@ export default function ServiceList() {
   }
 
   const validChannels = ['美国海运', '美国空运', '英国海运']
-  const validStartNodes = ['提货', '入库', '出港', '起运', '到港', '清关完成', '派送中']
-  const validEndNodes = ['到港', '清关完成', '派送中', '签收']
+  const validStartNodes = ['出运', '开船', '起飞']
+  const validEndNodes = ['提取', '入仓']
   const validWarehouses = [
     'ONT8','LGB8','LAX9','SBD1','GYR3','PHX7','LAS1','SMF3','OAK3','PDX9',
     'BFI3','SLC3','DEN3','MCI1','STL4','ORD5','MDW6','IND9','CMH3','DTW3',
@@ -160,7 +184,7 @@ export default function ServiceList() {
 
   const handleDownloadTemplate = () => {
     const headers = ['渠道', '开始时效节点', '结束时效节点', '承诺天数', '库点']
-    const exampleRow = ['美国海运', '起运', '到港', '18', 'ONT8,LGB8']
+    const exampleRow = ['美国海运', '出运', '提取', '18', 'ONT8,LGB8']
 
     const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow])
     ws['!cols'] = [
@@ -350,6 +374,31 @@ export default function ServiceList() {
       ),
     },
     {
+      title: '开始时效节点',
+      dataIndex: 'timeStartNode',
+      key: 'timeStartNode',
+      width: 120,
+    },
+    {
+      title: '结束时效节点',
+      dataIndex: 'timeEndNode',
+      key: 'timeEndNode',
+      width: 120,
+    },
+    {
+      title: '承诺天数',
+      dataIndex: 'promiseDays',
+      key: 'promiseDays',
+      width: 90,
+      render: (days: number) => `${days}天`,
+    },
+    {
+      title: '库点',
+      dataIndex: 'storageLocations',
+      key: 'storageLocations',
+      width: 180,
+    },
+    {
       title: '操作',
       key: 'action',
       width: 220,
@@ -450,7 +499,7 @@ export default function ServiceList() {
             rowSelection={rowSelection}
             columns={columns}
             dataSource={mockData}
-            scroll={{ x: 1500 }}
+            scroll={{ x: 2000 }}
             pagination={{
               total: 1443,
               pageSize: 100,
