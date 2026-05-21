@@ -12,6 +12,12 @@ import {
   InputNumber,
   Switch,
 } from 'antd'
+import { MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons'
+
+interface TimePromiseConfig {
+  promiseDays?: number
+  storageLocations?: string[]
+}
 
 interface ServiceRecord {
   key: string
@@ -26,6 +32,11 @@ interface ServiceRecord {
   bubbleRatio: number
   currency: string
   status: string
+  timeStartNode?: string
+  timeEndNode?: string
+  promiseDays?: number
+  storageLocations?: string | string[]
+  timePromiseConfigs?: TimePromiseConfig[]
 }
 
 interface EditDrawerProps {
@@ -39,17 +50,66 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
   const [form] = Form.useForm()
   const [timePromiseEnabled, setTimePromiseEnabled] = useState(false)
 
+  const getEmptyTimePromiseConfig = (): TimePromiseConfig => ({
+    promiseDays: undefined,
+    storageLocations: [],
+  })
+
+  const parseStorageLocations = (value?: string | string[]) => {
+    if (Array.isArray(value)) return value
+    if (!value) return []
+    return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+  }
+
+  const buildTimePromiseConfigs = (currentRecord: ServiceRecord) => {
+    if (currentRecord.timePromiseConfigs?.length) {
+      return currentRecord.timePromiseConfigs.map((item) => ({
+        ...item,
+        storageLocations: parseStorageLocations(item.storageLocations),
+      }))
+    }
+
+    if (
+      currentRecord.timeStartNode ||
+      currentRecord.timeEndNode ||
+      currentRecord.promiseDays ||
+      currentRecord.storageLocations
+    ) {
+      return [{
+        promiseDays: currentRecord.promiseDays,
+        storageLocations: parseStorageLocations(currentRecord.storageLocations),
+      }]
+    }
+
+    return []
+  }
+
   useEffect(() => {
     if (open && record) {
-      form.setFieldsValue(record)
+      const timePromiseConfigs = buildTimePromiseConfigs(record)
+      setTimePromiseEnabled(timePromiseConfigs.length > 0)
+      form.setFieldsValue({
+        ...record,
+        timePromiseConfigs,
+      })
     } else if (open && !record) {
       form.resetFields()
+      setTimePromiseEnabled(false)
     }
   }, [open, record, form])
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      onSave(values)
+      const configs: TimePromiseConfig[] = timePromiseEnabled ? values.timePromiseConfigs || [] : []
+      const firstConfig = configs[0] || {}
+
+      onSave({
+        ...values,
+        timePromiseEnabled,
+        timePromiseConfigs: configs,
+        promiseDays: firstConfig.promiseDays,
+        storageLocations: firstConfig.storageLocations?.join(',') || '',
+      })
     })
   }
 
@@ -321,135 +381,149 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
             checked={timePromiseEnabled}
             onChange={(checked) => {
               setTimePromiseEnabled(checked)
-              if (!checked) {
-                form.resetFields(['timeStartNode', 'timeEndNode', 'promiseDays', 'storageLocations'])
+              if (checked) {
+                const configs = form.getFieldValue('timePromiseConfigs')
+                if (!configs?.length) {
+                  form.setFieldValue('timePromiseConfigs', [getEmptyTimePromiseConfig()])
+                }
+              } else {
+                form.resetFields(['timePromiseConfigs'])
               }
             }}
           />
         </div>
-        <Row gutter={24}>
-          <Col span={8}>
-            <Form.Item
-              name="timeStartNode"
-              label="开始时效节点"
-              rules={timePromiseEnabled ? [{ required: true, message: '请选择' }] : []}
-            >
-              <Select placeholder="请选择" disabled={!timePromiseEnabled}>
-                <Select.Option value="出运">出运</Select.Option>
-                <Select.Option value="开船">开船</Select.Option>
-                <Select.Option value="起飞">起飞</Select.Option>
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="timeEndNode"
-              label="结束时效节点"
-              rules={timePromiseEnabled ? [{ required: true, message: '请选择' }] : []}
-            >
-              <Select placeholder="请选择" disabled={!timePromiseEnabled}>
-                <Select.Option value="提取">提取</Select.Option>
-                <Select.Option value="入仓">入仓</Select.Option>
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              name="promiseDays"
-              label="承诺天数"
-              rules={timePromiseEnabled
-                ? [{ required: true, message: '请输入' }, { type: 'number', min: 1, message: '至少1天' }]
-                : []
-              }
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="请输入"
-                min={1}
-                precision={0}
-                addonAfter="天"
-                disabled={!timePromiseEnabled}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Row gutter={24}>
-          <Col span={12}>
-            <Form.Item
-              name="storageLocations"
-              label="库点"
-              rules={timePromiseEnabled ? [{ required: true, message: '请选择库点' }] : []}
-            >
-              <Select
-                mode="multiple"
-                placeholder="请选择库点"
-                disabled={!timePromiseEnabled}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-                options={[
-                  { label: 'ONT8', value: 'ONT8' },
-                  { label: 'LGB8', value: 'LGB8' },
-                  { label: 'LAX9', value: 'LAX9' },
-                  { label: 'SBD1', value: 'SBD1' },
-                  { label: 'GYR3', value: 'GYR3' },
-                  { label: 'PHX7', value: 'PHX7' },
-                  { label: 'LAS1', value: 'LAS1' },
-                  { label: 'SMF3', value: 'SMF3' },
-                  { label: 'OAK3', value: 'OAK3' },
-                  { label: 'PDX9', value: 'PDX9' },
-                  { label: 'BFI3', value: 'BFI3' },
-                  { label: 'SLC3', value: 'SLC3' },
-                  { label: 'DEN3', value: 'DEN3' },
-                  { label: 'MCI1', value: 'MCI1' },
-                  { label: 'STL4', value: 'STL4' },
-                  { label: 'ORD5', value: 'ORD5' },
-                  { label: 'MDW6', value: 'MDW6' },
-                  { label: 'IND9', value: 'IND9' },
-                  { label: 'CMH3', value: 'CMH3' },
-                  { label: 'DTW3', value: 'DTW3' },
-                  { label: 'CLE3', value: 'CLE3' },
-                  { label: 'BNA3', value: 'BNA3' },
-                  { label: 'MEM1', value: 'MEM1' },
-                  { label: 'ATL8', value: 'ATL8' },
-                  { label: 'MCO2', value: 'MCO2' },
-                  { label: 'MIA1', value: 'MIA1' },
-                  { label: 'TPA2', value: 'TPA2' },
-                  { label: 'CLT2', value: 'CLT2' },
-                  { label: 'RDU5', value: 'RDU5' },
-                  { label: 'BWI2', value: 'BWI2' },
-                  { label: 'PHL4', value: 'PHL4' },
-                  { label: 'EWR9', value: 'EWR9' },
-                  { label: 'BOS7', value: 'BOS7' },
-                  { label: 'DFW6', value: 'DFW6' },
-                  { label: 'HOU8', value: 'HOU8' },
-                  { label: 'SAT4', value: 'SAT4' },
-                  { label: 'ABE8', value: 'ABE8' },
-                  { label: 'AVP1', value: 'AVP1' },
-                  { label: 'TEB9', value: 'TEB9' },
-                  { label: 'PIT5', value: 'PIT5' },
-                  { label: 'MGE3', value: 'MGE3' },
-                  { label: 'JAX3', value: 'JAX3' },
-                  { label: 'SAV3', value: 'SAV3' },
-                  { label: 'CHA2', value: 'CHA2' },
-                  { label: 'GSP1', value: 'GSP1' },
-                  { label: 'BFL1', value: 'BFL1' },
-                  { label: 'FAT2', value: 'FAT2' },
-                  { label: 'RNO4', value: 'RNO4' },
-                  { label: 'BOI2', value: 'BOI2' },
-                  { label: 'TUL2', value: 'TUL2' },
-                  { label: 'OKC2', value: 'OKC2' },
-                  { label: 'ABQ2', value: 'ABQ2' },
-                  { label: 'ELP1', value: 'ELP1' },
-                  { label: 'HSV1', value: 'HSV1' },
-                  { label: 'RIC1', value: 'RIC1' },
-                  { label: 'ORF2', value: 'ORF2' },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
+        {timePromiseEnabled && (
+          <Form.List name="timePromiseConfigs">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map((field, index) => (
+                  <Row gutter={24} key={field.key} align="top">
+                    <Col span={6}>
+                      <Form.Item
+                        name={[field.name, 'promiseDays']}
+                        label="承诺天数"
+                        rules={[
+                          { required: true, message: '请输入' },
+                          {
+                            validator: (_, value) => {
+                              if (Number.isInteger(value) && value >= 1) {
+                                return Promise.resolve()
+                              }
+                              return Promise.reject(new Error('请输入正整数天数'))
+                            },
+                          },
+                        ]}
+                      >
+                        <InputNumber
+                          style={{ width: '100%' }}
+                          placeholder="请输入"
+                          min={1}
+                          step={1}
+                          precision={0}
+                          addonAfter="天"
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={18}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <Form.Item
+                          name={[field.name, 'storageLocations']}
+                          label="库点"
+                          rules={[{ required: true, message: '请选择库点' }]}
+                          style={{ flex: 1 }}
+                        >
+                          <Select
+                            mode="multiple"
+                            placeholder="请选择库点"
+                            showSearch
+                            filterOption={(input, option) =>
+                              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            options={[
+                              { label: 'ONT8', value: 'ONT8' },
+                              { label: 'LGB8', value: 'LGB8' },
+                              { label: 'LAX9', value: 'LAX9' },
+                              { label: 'SBD1', value: 'SBD1' },
+                              { label: 'GYR3', value: 'GYR3' },
+                              { label: 'PHX7', value: 'PHX7' },
+                              { label: 'LAS1', value: 'LAS1' },
+                              { label: 'SMF3', value: 'SMF3' },
+                              { label: 'OAK3', value: 'OAK3' },
+                              { label: 'PDX9', value: 'PDX9' },
+                              { label: 'BFI3', value: 'BFI3' },
+                              { label: 'SLC3', value: 'SLC3' },
+                              { label: 'DEN3', value: 'DEN3' },
+                              { label: 'MCI1', value: 'MCI1' },
+                              { label: 'STL4', value: 'STL4' },
+                              { label: 'ORD5', value: 'ORD5' },
+                              { label: 'MDW6', value: 'MDW6' },
+                              { label: 'IND9', value: 'IND9' },
+                              { label: 'CMH3', value: 'CMH3' },
+                              { label: 'DTW3', value: 'DTW3' },
+                              { label: 'CLE3', value: 'CLE3' },
+                              { label: 'BNA3', value: 'BNA3' },
+                              { label: 'MEM1', value: 'MEM1' },
+                              { label: 'ATL8', value: 'ATL8' },
+                              { label: 'MCO2', value: 'MCO2' },
+                              { label: 'MIA1', value: 'MIA1' },
+                              { label: 'TPA2', value: 'TPA2' },
+                              { label: 'CLT2', value: 'CLT2' },
+                              { label: 'RDU5', value: 'RDU5' },
+                              { label: 'BWI2', value: 'BWI2' },
+                              { label: 'PHL4', value: 'PHL4' },
+                              { label: 'EWR9', value: 'EWR9' },
+                              { label: 'BOS7', value: 'BOS7' },
+                              { label: 'DFW6', value: 'DFW6' },
+                              { label: 'HOU8', value: 'HOU8' },
+                              { label: 'SAT4', value: 'SAT4' },
+                              { label: 'ABE8', value: 'ABE8' },
+                              { label: 'AVP1', value: 'AVP1' },
+                              { label: 'TEB9', value: 'TEB9' },
+                              { label: 'PIT5', value: 'PIT5' },
+                              { label: 'MGE3', value: 'MGE3' },
+                              { label: 'JAX3', value: 'JAX3' },
+                              { label: 'SAV3', value: 'SAV3' },
+                              { label: 'CHA2', value: 'CHA2' },
+                              { label: 'GSP1', value: 'GSP1' },
+                              { label: 'BFL1', value: 'BFL1' },
+                              { label: 'FAT2', value: 'FAT2' },
+                              { label: 'RNO4', value: 'RNO4' },
+                              { label: 'BOI2', value: 'BOI2' },
+                              { label: 'TUL2', value: 'TUL2' },
+                              { label: 'OKC2', value: 'OKC2' },
+                              { label: 'ABQ2', value: 'ABQ2' },
+                              { label: 'ELP1', value: 'ELP1' },
+                              { label: 'HSV1', value: 'HSV1' },
+                              { label: 'RIC1', value: 'RIC1' },
+                              { label: 'ORF2', value: 'ORF2' },
+                            ]}
+                          />
+                        </Form.Item>
+                        <Space style={{ marginTop: 30 }} size={4}>
+                          <Button
+                            type="text"
+                            icon={<PlusCircleOutlined style={{ fontSize: 22 }} />}
+                            onClick={() => add(getEmptyTimePromiseConfig())}
+                            style={{ width: 36, height: 32 }}
+                          />
+                          {index > 0 && (
+                            <Button
+                              type="text"
+                              danger
+                              icon={<MinusCircleOutlined style={{ fontSize: 20 }} />}
+                              onClick={() => remove(field.name)}
+                              style={{ width: 32, height: 32 }}
+                            />
+                          )}
+                        </Space>
+                      </div>
+                    </Col>
+                  </Row>
+                ))}
+              </>
+            )}
+          </Form.List>
+        )}
       </Form>
     </Drawer>
   )

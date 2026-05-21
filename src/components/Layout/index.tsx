@@ -82,7 +82,7 @@ const menuItems: MenuProps['items'] = [
     label: '导出',
   },
   {
-    key: 'system',
+    key: '/system',
     icon: <SettingOutlined />,
     label: '系统',
   },
@@ -108,6 +108,7 @@ const initialTabs: Tab[] = [
   { key: '/waybill', label: '运单' },
   { key: '404', label: '404' },
   { key: '/service', label: '服务' },
+  { key: '/system', label: '系统' },
 ]
 
 const userMenuItems: MenuProps['items'] = [

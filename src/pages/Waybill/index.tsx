@@ -8,7 +8,6 @@ import {
   DatePicker,
   Tag,
   Tooltip,
-  message,
   App,
 } from 'antd'
 import {
@@ -182,6 +181,7 @@ const statusColorMap: Record<string, string> = {
 }
 
 export default function WaybillList() {
+  const { message } = App.useApp()
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<WaybillRecord | null>(null)
@@ -342,8 +342,7 @@ export default function WaybillList() {
   }
 
   return (
-    <App>
-      <div>
+    <div>
         {/* 筛选栏 */}
         <div className="filter-bar">
           <div className="filter-item">
@@ -428,6 +427,5 @@ export default function WaybillList() {
           onSave={handleSave}
         />
       </div>
-    </App>
   )
 }

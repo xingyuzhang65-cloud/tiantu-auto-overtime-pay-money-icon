@@ -4,13 +4,12 @@ import {
   Select,
   Table,
   Space,
-  Tag,
-  message,
   App,
-  Modal,
   Upload,
   Alert,
   Dropdown,
+  Modal,
+  Tooltip,
 } from 'antd'
 import type { UploadProps } from 'antd'
 import {
@@ -34,6 +33,11 @@ import type { ColumnsType } from 'antd/es/table'
 import * as XLSX from 'xlsx'
 import EditDrawer from './EditDrawer'
 
+interface TimePromiseConfig {
+  promiseDays?: number
+  storageLocations?: string[]
+}
+
 interface ServiceRecord {
   key: string
   channel: string
@@ -51,6 +55,99 @@ interface ServiceRecord {
   timeEndNode: string
   promiseDays: number
   storageLocations: string
+  timePromiseConfigs?: TimePromiseConfig[]
+}
+
+const normalizeStorageLocations = (locations?: string | string[]) => {
+  if (Array.isArray(locations)) return locations
+  if (!locations) return []
+  return locations.split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+}
+
+const getTimePromiseConfigs = (record: ServiceRecord) => {
+  if (record.timePromiseConfigs?.length) {
+    return record.timePromiseConfigs.map((config) => ({
+      promiseDays: config.promiseDays,
+      storageLocations: normalizeStorageLocations(config.storageLocations),
+    }))
+  }
+
+  if (record.promiseDays || record.storageLocations) {
+    return [{
+      promiseDays: record.promiseDays,
+      storageLocations: normalizeStorageLocations(record.storageLocations),
+    }]
+  }
+
+  return []
+}
+
+const renderEllipsisText = (value?: string | number) => {
+  const text = value === undefined || value === null || value === '' ? '-' : String(value)
+
+  return (
+    <Tooltip title={text}>
+      <span
+        style={{
+          display: 'block',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {text}
+      </span>
+    </Tooltip>
+  )
+}
+
+const renderStorageLocations = (value: string) => (
+  <Tooltip
+    title={value}
+    placement="topLeft"
+    mouseEnterDelay={0.2}
+    mouseLeaveDelay={0}
+    overlayStyle={{ maxWidth: 520 }}
+  >
+    <span
+      style={{
+        display: 'block',
+        width: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        cursor: 'default',
+      }}
+    >
+      {value}
+    </span>
+  </Tooltip>
+)
+
+const getPromiseDaysText = (record: ServiceRecord) => {
+  const configs = getTimePromiseConfigs(record)
+  if (configs.length === 0) return '-'
+
+  return configs
+    .map((config) => {
+      const days = Number(config.promiseDays)
+      const integerDays = Number.isFinite(days) ? Math.trunc(days) : '-'
+      return `${integerDays}天`
+    })
+    .join('；')
+}
+
+const getStorageLocationsText = (record: ServiceRecord) => {
+  const configs = getTimePromiseConfigs(record)
+  if (configs.length === 0) return '-'
+
+  return configs
+    .map((config, index) => {
+      const prefix = configs.length > 1 ? `${index + 1}. ` : ''
+      return `${prefix}${config.storageLocations.join(',') || '-'}`
+    })
+    .join('；')
 }
 
 const mockData: ServiceRecord[] = [
@@ -71,6 +168,10 @@ const mockData: ServiceRecord[] = [
     timeEndNode: '提取',
     promiseDays: 18,
     storageLocations: 'ONT8,LGB8',
+    timePromiseConfigs: [
+      { promiseDays: 18, storageLocations: ['ONT8', 'LGB8'] },
+      { promiseDays: 22, storageLocations: ['LAX9', 'SBD1'] },
+    ],
   },
   {
     key: '2',
@@ -147,6 +248,8 @@ const mockData: ServiceRecord[] = [
 ]
 
 export default function ServiceList() {
+  const { message, modal } = App.useApp()
+  const [data, setData] = useState<ServiceRecord[]>(mockData)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null)
@@ -166,6 +269,24 @@ export default function ServiceList() {
   }
 
   const handleSave = (values: any) => {
+    setData((prev) => {
+      if (editingRecord) {
+        return prev.map((item) => (
+          item.key === editingRecord.key
+            ? { ...editingRecord, ...values, key: editingRecord.key }
+            : item
+        ))
+      }
+
+      return [
+        {
+          ...values,
+          key: String(Date.now()),
+          status: values.status || '停用',
+        },
+        ...prev,
+      ]
+    })
     message.success('保存成功')
     closeEditDrawer()
   }
@@ -292,7 +413,7 @@ export default function ServiceList() {
       message.warning('请选择服务')
       return
     }
-    Modal.confirm({
+    modal.confirm({
       title: '批量关闭承诺时效',
       content: `确认关闭已选中的 ${selectedRowKeys.length} 个服务的时效承诺配置吗？关闭后承诺时效将默认关闭。`,
       okText: '确认关闭',
@@ -309,48 +430,64 @@ export default function ServiceList() {
       dataIndex: 'channel',
       key: 'channel',
       width: 110,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '服务名称',
       dataIndex: 'serviceName',
       key: 'serviceName',
       width: 180,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '服务代码',
       dataIndex: 'serviceCode',
       key: 'serviceCode',
       width: 120,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '服务分类',
       dataIndex: 'serviceCategory',
       key: 'serviceCategory',
       width: 90,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '计费方式',
       dataIndex: 'billingMethod',
       key: 'billingMethod',
       width: 90,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '派送方式',
       dataIndex: 'deliveryMethod',
       key: 'deliveryMethod',
       width: 100,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '线路',
       dataIndex: 'route',
       key: 'route',
       width: 70,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '运输方式',
       dataIndex: 'transportMethod',
       key: 'transportMethod',
       width: 90,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '分泡比例',
@@ -363,6 +500,8 @@ export default function ServiceList() {
       dataIndex: 'currency',
       key: 'currency',
       width: 70,
+      ellipsis: true,
+      render: renderEllipsisText,
     },
     {
       title: '状态',
@@ -374,29 +513,18 @@ export default function ServiceList() {
       ),
     },
     {
-      title: '开始时效节点',
-      dataIndex: 'timeStartNode',
-      key: 'timeStartNode',
-      width: 120,
-    },
-    {
-      title: '结束时效节点',
-      dataIndex: 'timeEndNode',
-      key: 'timeEndNode',
-      width: 120,
-    },
-    {
-      title: '承诺天数',
-      dataIndex: 'promiseDays',
-      key: 'promiseDays',
-      width: 90,
-      render: (days: number) => `${days}天`,
+      title: '承诺时效',
+      key: 'timePromiseConfigs',
+      width: 160,
+      ellipsis: true,
+      render: (_, record) => renderEllipsisText(getPromiseDaysText(record)),
     },
     {
       title: '库点',
-      dataIndex: 'storageLocations',
       key: 'storageLocations',
-      width: 180,
+      width: 260,
+      ellipsis: true,
+      render: (_, record) => renderStorageLocations(getStorageLocationsText(record)),
     },
     {
       title: '操作',
@@ -421,8 +549,7 @@ export default function ServiceList() {
   }
 
   return (
-    <App>
-      <div>
+    <div>
         {/* 筛选栏 */}
         <div className="filter-bar">
           <div className="filter-item">
@@ -470,19 +597,23 @@ export default function ServiceList() {
           <Button icon={<SettingOutlined />}>配置渠道</Button>
           <Dropdown
             trigger={['click']}
+            getPopupContainer={(trigger) => trigger.parentElement || document.body}
             menu={{
               items: [
                 { key: 'batch-edit', icon: <EditOutlined />, label: '批量修改服务信息' },
-                { key: 'batch-time', icon: <ClockCircleOutlined />, label: '批量修改时效' },
-                { key: 'batch-close-time', icon: <StopOutlined />, label: '批量关闭承诺时效' },
+                {
+                  key: 'batch-time',
+                  icon: <ClockCircleOutlined />,
+                  label: '批量修改时效',
+                  onClick: () => openBatchTimeModal(),
+                },
+                {
+                  key: 'batch-close-time',
+                  icon: <StopOutlined />,
+                  label: '批量关闭承诺时效',
+                  onClick: () => handleBatchCloseTime(),
+                },
               ],
-              onClick: ({ key }) => {
-                if (key === 'batch-time') {
-                  openBatchTimeModal()
-                } else if (key === 'batch-close-time') {
-                  handleBatchCloseTime()
-                }
-              },
             }}
           >
             <Button icon={<EditOutlined />}>
@@ -498,8 +629,9 @@ export default function ServiceList() {
             ref={tableRef}
             rowSelection={rowSelection}
             columns={columns}
-            dataSource={mockData}
-            scroll={{ x: 2000 }}
+            dataSource={data}
+            tableLayout="fixed"
+            scroll={{ x: 1900 }}
             pagination={{
               total: 1443,
               pageSize: 100,
@@ -588,6 +720,5 @@ export default function ServiceList() {
           </a>
         </Modal>
       </div>
-    </App>
   )
 }
