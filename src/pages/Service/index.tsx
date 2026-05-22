@@ -32,9 +32,21 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import * as XLSX from 'xlsx'
 import EditDrawer from './EditDrawer'
+import {
+  getInvalidLocationValues,
+  getLocationLabel,
+  getLocationTypeByLabel,
+  splitLocationValues,
+  defaultPostalCodes,
+  locationTypeOptions,
+  type ChannelLocationType,
+  validChannels,
+  validWarehouses,
+} from './channelRules'
 
 interface TimePromiseConfig {
   promiseDays?: number
+  locationType?: ChannelLocationType
   storageLocations?: string[]
 }
 
@@ -59,15 +71,14 @@ interface ServiceRecord {
 }
 
 const normalizeStorageLocations = (locations?: string | string[]) => {
-  if (Array.isArray(locations)) return locations
-  if (!locations) return []
-  return locations.split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+  return splitLocationValues(locations)
 }
 
 const getTimePromiseConfigs = (record: ServiceRecord) => {
   if (record.timePromiseConfigs?.length) {
     return record.timePromiseConfigs.map((config) => ({
       promiseDays: config.promiseDays,
+      locationType: config.locationType || 'warehouse',
       storageLocations: normalizeStorageLocations(config.storageLocations),
     }))
   }
@@ -75,6 +86,7 @@ const getTimePromiseConfigs = (record: ServiceRecord) => {
   if (record.promiseDays || record.storageLocations) {
     return [{
       promiseDays: record.promiseDays,
+      locationType: 'warehouse',
       storageLocations: normalizeStorageLocations(record.storageLocations),
     }]
   }
@@ -144,8 +156,10 @@ const getStorageLocationsText = (record: ServiceRecord) => {
 
   return configs
     .map((config, index) => {
+      const locationType = (config.locationType || 'warehouse') as ChannelLocationType
+      const locationLabel = getLocationLabel(locationType)
       const prefix = configs.length > 1 ? `${index + 1}. ` : ''
-      return `${prefix}${config.storageLocations.join(',') || '-'}`
+      return `${prefix}${locationLabel}: ${config.storageLocations.join(',') || '-'}`
     })
     .join('；')
 }
@@ -291,21 +305,12 @@ export default function ServiceList() {
     closeEditDrawer()
   }
 
-  const validChannels = ['美国海运', '美国空运', '英国海运']
   const validStartNodes = ['出运', '开船', '起飞']
   const validEndNodes = ['提取', '入仓']
-  const validWarehouses = [
-    'ONT8','LGB8','LAX9','SBD1','GYR3','PHX7','LAS1','SMF3','OAK3','PDX9',
-    'BFI3','SLC3','DEN3','MCI1','STL4','ORD5','MDW6','IND9','CMH3','DTW3',
-    'CLE3','BNA3','MEM1','ATL8','MCO2','MIA1','TPA2','CLT2','RDU5','BWI2',
-    'PHL4','EWR9','BOS7','DFW6','HOU8','SAT4','ABE8','AVP1','TEB9','PIT5',
-    'MGE3','JAX3','SAV3','CHA2','GSP1','BFL1','FAT2','RNO4','BOI2','TUL2',
-    'OKC2','ABQ2','ELP1','HSV1','RIC1','ORF2',
-  ]
 
   const handleDownloadTemplate = () => {
-    const headers = ['渠道', '开始时效节点', '结束时效节点', '承诺天数', '库点']
-    const exampleRow = ['美国海运', '出运', '提取', '18', 'ONT8,LGB8']
+    const headers = ['渠道', '开始时效节点', '结束时效节点', '承诺天数', '类型', '库点/邮编']
+    const exampleRow = ['美国海运', '出运', '提取', '18', '库点', 'ONT8,LGB8']
 
     const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow])
     ws['!cols'] = [
@@ -313,6 +318,7 @@ export default function ServiceList() {
       { wch: 16 },
       { wch: 16 },
       { wch: 12 },
+      { wch: 10 },
       { wch: 30 },
     ]
 
@@ -323,7 +329,9 @@ export default function ServiceList() {
       ['可选渠道'], ...validChannels.map(c => [c]),
       [], ['可选开始时效节点'], ...validStartNodes.map(n => [n]),
       [], ['可选结束时效节点'], ...validEndNodes.map(n => [n]),
+      [], ['可选类型'], ...locationTypeOptions.map(option => [option.label]),
       [], ['可选库点（多个用逗号分隔）'], ...validWarehouses.map(w => [w]),
+      [], ['可选邮编（多个用逗号分隔）'], ...defaultPostalCodes.map(code => [code]),
     ])
     XLSX.utils.book_append_sheet(wb, refWs, '可选值参考')
 
@@ -356,11 +364,14 @@ export default function ServiceList() {
           const startNode = String(row[1] ?? '').trim()
           const endNode = String(row[2] ?? '').trim()
           const promiseDays = String(row[3] ?? '').trim()
-          const storageLocations = String(row[4] ?? '').trim()
+          const locationTypeText = String(row[4] ?? '').trim()
+          const storageLocations = String(row[5] ?? '').trim()
 
-          if (!channel && !startNode && !endNode && !promiseDays && !storageLocations) continue
+          if (!channel && !startNode && !endNode && !promiseDays && !locationTypeText && !storageLocations) continue
 
           const rowErrors: string[] = []
+          const locationType = getLocationTypeByLabel(locationTypeText)
+          const locationLabel = locationType ? getLocationLabel(locationType) : '库点/邮编'
 
           if (!channel) rowErrors.push('渠道为空')
           else if (!validChannels.includes(channel)) rowErrors.push(`渠道"${channel}"不在可选范围内`)
@@ -374,10 +385,18 @@ export default function ServiceList() {
           if (!promiseDays) rowErrors.push('承诺天数为空')
           else if (!/^\d+$/.test(promiseDays) || Number(promiseDays) < 1) rowErrors.push(`承诺天数"${promiseDays}"无效`)
 
-          if (storageLocations) {
-            const locs = storageLocations.split(/[,，]/).map(s => s.trim()).filter(Boolean)
-            const invalidLocs = locs.filter(l => !validWarehouses.includes(l))
-            if (invalidLocs.length > 0) rowErrors.push(`库点"${invalidLocs.join(',')}"不在可选范围内`)
+          if (!locationTypeText) rowErrors.push('类型为空')
+          else if (!locationType) rowErrors.push(`类型"${locationTypeText}"不在可选范围内`)
+
+          if (!storageLocations) {
+            rowErrors.push(`${locationLabel}为空`)
+          } else if (locationType) {
+            const locs = splitLocationValues(storageLocations)
+            const invalidLocs = getInvalidLocationValues(locationType, locs)
+            if (invalidLocs.length > 0) {
+              const message = locationType === 'postalCode' ? '不在可选邮编范围内' : '不在可选库点范围内'
+              rowErrors.push(`${locationLabel}"${invalidLocs.join(',')}"${message}`)
+            }
           }
 
           if (rowErrors.length > 0) {
@@ -520,7 +539,7 @@ export default function ServiceList() {
       render: (_, record) => renderEllipsisText(getPromiseDaysText(record)),
     },
     {
-      title: '库点',
+      title: '库点/邮编',
       key: 'storageLocations',
       width: 260,
       ellipsis: true,

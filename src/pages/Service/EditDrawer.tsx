@@ -13,9 +13,19 @@ import {
   Switch,
 } from 'antd'
 import { MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons'
+import {
+  getInvalidLocationValues,
+  getLocationLabel,
+  getLocationRuleByType,
+  locationTypeOptions,
+  splitLocationValues,
+  type ChannelLocationType,
+  validChannels,
+} from './channelRules'
 
 interface TimePromiseConfig {
   promiseDays?: number
+  locationType?: ChannelLocationType
   storageLocations?: string[]
 }
 
@@ -52,19 +62,19 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
 
   const getEmptyTimePromiseConfig = (): TimePromiseConfig => ({
     promiseDays: undefined,
+    locationType: 'warehouse',
     storageLocations: [],
   })
 
   const parseStorageLocations = (value?: string | string[]) => {
-    if (Array.isArray(value)) return value
-    if (!value) return []
-    return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean)
+    return splitLocationValues(value)
   }
 
   const buildTimePromiseConfigs = (currentRecord: ServiceRecord) => {
     if (currentRecord.timePromiseConfigs?.length) {
       return currentRecord.timePromiseConfigs.map((item) => ({
         ...item,
+        locationType: item.locationType || 'warehouse',
         storageLocations: parseStorageLocations(item.storageLocations),
       }))
     }
@@ -77,6 +87,7 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
     ) {
       return [{
         promiseDays: currentRecord.promiseDays,
+        locationType: 'warehouse',
         storageLocations: parseStorageLocations(currentRecord.storageLocations),
       }]
     }
@@ -190,11 +201,10 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
           {/* 第二列 */}
           <Col span={8}>
             <Form.Item name="channel" label="渠道" rules={[{ required: true, message: '请选择' }]}>
-              <Select placeholder="请选择">
-                <Select.Option value="美国海运">美国海运</Select.Option>
-                <Select.Option value="美国空运">美国空运</Select.Option>
-                <Select.Option value="英国海运">英国海运</Select.Option>
-              </Select>
+              <Select
+                placeholder="请选择"
+                options={validChannels.map((channel) => ({ label: channel, value: channel }))}
+              />
             </Form.Item>
             <Form.Item name="serviceType" label="服务类型" rules={[{ required: true, message: '请选择' }]}>
               <Select placeholder="请选择">
@@ -398,7 +408,7 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
               <>
                 {fields.map((field, index) => (
                   <Row gutter={24} key={field.key} align="top">
-                    <Col span={6}>
+                    <Col span={5}>
                       <Form.Item
                         name={[field.name, 'promiseDays']}
                         label="承诺天数"
@@ -424,80 +434,71 @@ export default function EditDrawer({ open, record, onClose, onSave }: EditDrawer
                         />
                       </Form.Item>
                     </Col>
-                    <Col span={18}>
+                    <Col span={5}>
+                      <Form.Item
+                        name={[field.name, 'locationType']}
+                        label="类型"
+                        rules={[{ required: true, message: '请选择类型' }]}
+                      >
+                        <Select
+                          placeholder="请选择"
+                          options={locationTypeOptions}
+                          onChange={() => {
+                            form.setFieldValue(['timePromiseConfigs', field.name, 'storageLocations'], [])
+                          }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={14}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                         <Form.Item
-                          name={[field.name, 'storageLocations']}
-                          label="库点"
-                          rules={[{ required: true, message: '请选择库点' }]}
-                          style={{ flex: 1 }}
+                          noStyle
+                          shouldUpdate={(prev, current) => (
+                            prev.timePromiseConfigs?.[field.name]?.locationType !==
+                            current.timePromiseConfigs?.[field.name]?.locationType
+                          )}
                         >
-                          <Select
-                            mode="multiple"
-                            placeholder="请选择库点"
-                            showSearch
-                            filterOption={(input, option) =>
-                              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                            options={[
-                              { label: 'ONT8', value: 'ONT8' },
-                              { label: 'LGB8', value: 'LGB8' },
-                              { label: 'LAX9', value: 'LAX9' },
-                              { label: 'SBD1', value: 'SBD1' },
-                              { label: 'GYR3', value: 'GYR3' },
-                              { label: 'PHX7', value: 'PHX7' },
-                              { label: 'LAS1', value: 'LAS1' },
-                              { label: 'SMF3', value: 'SMF3' },
-                              { label: 'OAK3', value: 'OAK3' },
-                              { label: 'PDX9', value: 'PDX9' },
-                              { label: 'BFI3', value: 'BFI3' },
-                              { label: 'SLC3', value: 'SLC3' },
-                              { label: 'DEN3', value: 'DEN3' },
-                              { label: 'MCI1', value: 'MCI1' },
-                              { label: 'STL4', value: 'STL4' },
-                              { label: 'ORD5', value: 'ORD5' },
-                              { label: 'MDW6', value: 'MDW6' },
-                              { label: 'IND9', value: 'IND9' },
-                              { label: 'CMH3', value: 'CMH3' },
-                              { label: 'DTW3', value: 'DTW3' },
-                              { label: 'CLE3', value: 'CLE3' },
-                              { label: 'BNA3', value: 'BNA3' },
-                              { label: 'MEM1', value: 'MEM1' },
-                              { label: 'ATL8', value: 'ATL8' },
-                              { label: 'MCO2', value: 'MCO2' },
-                              { label: 'MIA1', value: 'MIA1' },
-                              { label: 'TPA2', value: 'TPA2' },
-                              { label: 'CLT2', value: 'CLT2' },
-                              { label: 'RDU5', value: 'RDU5' },
-                              { label: 'BWI2', value: 'BWI2' },
-                              { label: 'PHL4', value: 'PHL4' },
-                              { label: 'EWR9', value: 'EWR9' },
-                              { label: 'BOS7', value: 'BOS7' },
-                              { label: 'DFW6', value: 'DFW6' },
-                              { label: 'HOU8', value: 'HOU8' },
-                              { label: 'SAT4', value: 'SAT4' },
-                              { label: 'ABE8', value: 'ABE8' },
-                              { label: 'AVP1', value: 'AVP1' },
-                              { label: 'TEB9', value: 'TEB9' },
-                              { label: 'PIT5', value: 'PIT5' },
-                              { label: 'MGE3', value: 'MGE3' },
-                              { label: 'JAX3', value: 'JAX3' },
-                              { label: 'SAV3', value: 'SAV3' },
-                              { label: 'CHA2', value: 'CHA2' },
-                              { label: 'GSP1', value: 'GSP1' },
-                              { label: 'BFL1', value: 'BFL1' },
-                              { label: 'FAT2', value: 'FAT2' },
-                              { label: 'RNO4', value: 'RNO4' },
-                              { label: 'BOI2', value: 'BOI2' },
-                              { label: 'TUL2', value: 'TUL2' },
-                              { label: 'OKC2', value: 'OKC2' },
-                              { label: 'ABQ2', value: 'ABQ2' },
-                              { label: 'ELP1', value: 'ELP1' },
-                              { label: 'HSV1', value: 'HSV1' },
-                              { label: 'RIC1', value: 'RIC1' },
-                              { label: 'ORF2', value: 'ORF2' },
-                            ]}
-                          />
+                          {({ getFieldValue }) => {
+                            const locationType = getFieldValue(['timePromiseConfigs', field.name, 'locationType']) || 'warehouse'
+                            const locationRule = getLocationRuleByType(locationType)
+                            const locationLabel = getLocationLabel(locationRule.locationType)
+
+                            return (
+                              <Form.Item
+                                name={[field.name, 'storageLocations']}
+                                label={locationLabel}
+                                rules={[
+                                  { required: true, message: `请选择${locationLabel}` },
+                                  {
+                                    validator: (_, value) => {
+                                      const values = splitLocationValues(value)
+                                      if (!values.length) return Promise.resolve()
+
+                                      const invalidValues = getInvalidLocationValues(locationRule.locationType, values)
+                                      if (!invalidValues.length) return Promise.resolve()
+
+                                      const message = locationRule.locationType === 'postalCode'
+                                        ? `${locationLabel}不在可选邮编范围内：${invalidValues.join(',')}`
+                                        : `${locationLabel}不在可选库点范围内：${invalidValues.join(',')}`
+                                      return Promise.reject(new Error(message))
+                                    },
+                                  },
+                                ]}
+                                style={{ flex: 1 }}
+                              >
+                                <Select
+                                  mode="multiple"
+                                  placeholder={`请选择${locationLabel}`}
+                                  showSearch
+                                  tokenSeparators={[',', '，']}
+                                  filterOption={(input, option) =>
+                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                  }
+                                  options={locationRule.locations.map((location) => ({ label: location, value: location }))}
+                                />
+                              </Form.Item>
+                            )
+                          }}
                         </Form.Item>
                         <Space style={{ marginTop: 30 }} size={4}>
                           <Button

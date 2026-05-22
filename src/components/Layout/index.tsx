@@ -108,6 +108,7 @@ const initialTabs: Tab[] = [
   { key: '/waybill', label: '运单' },
   { key: '404', label: '404' },
   { key: '/service', label: '服务' },
+  { key: '/quote-maintain', label: '报价维护' },
   { key: '/system', label: '系统' },
 ]
 
