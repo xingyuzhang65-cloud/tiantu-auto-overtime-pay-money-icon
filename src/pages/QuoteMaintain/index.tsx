@@ -228,6 +228,7 @@ const renderEllipsis = (text: string) => (
 )
 
 export default function QuoteMaintainPage() {
+  console.log('[运价维护] v3 - 快递派天数输入框 | 数据:', quoteData.length, '条, 快递派:', quoteData.filter(d => d.name.includes('快递派') || d.name.includes('UPS派')).length, '条, 卡派:', quoteData.filter(d => d.name.includes('卡派')).length, '条')
   const [form] = Form.useForm()
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [quoteName, setQuoteName] = useState('')
