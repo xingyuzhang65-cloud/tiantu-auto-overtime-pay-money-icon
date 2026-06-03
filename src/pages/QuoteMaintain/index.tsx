@@ -87,7 +87,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天杰',
     updateTime: '2026-05-20 12:04:48',
     updater: '天旭',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '5',
@@ -157,7 +157,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天杰',
     updateTime: '2026-05-20 13:30:15',
     updater: '天旭',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '12',
@@ -167,7 +167,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天旭',
     updateTime: '2026-05-20 12:10:42',
     updater: '天翰',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '13',
@@ -177,7 +177,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天翰',
     updateTime: '2026-05-20 09:15:08',
     updater: '天杰',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '14',
@@ -187,7 +187,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天杰',
     updateTime: '2026-05-19 17:42:18',
     updater: '天旭',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '15',
@@ -197,7 +197,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天翰',
     updateTime: '2026-05-19 14:55:36',
     updater: '天翰',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '16',
@@ -207,7 +207,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天杰',
     updateTime: '2026-05-19 11:20:44',
     updater: '天旭',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '17',
@@ -217,7 +217,7 @@ const quoteData: QuoteRecord[] = [
     creator: '天旭',
     updateTime: '2026-05-19 08:10:53',
     updater: '天杰',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
 ]
 
@@ -237,7 +237,6 @@ export default function QuoteMaintainPage() {
   const [editingQuote, setEditingQuote] = useState<QuoteRecord | null>(null)
   const [supportTransitDays, setSupportTransitDays] = useState(true)
   const [parseFields, setParseFields] = useState<ParseField[]>(['country', 'zone', 'city'])
-  const [lastMile, setLastMile] = useState<string>('卡车配送')
   const [pasteText, setPasteText] = useState('')
   const [rateRows, setRateRows] = useState<RateEditRow[]>([
     { key: '1', country: '美国', zone: 'ONT8、LGB8、LAX9、SBD1', city: '', price: 5.2, transitDays: 12 },
@@ -246,16 +245,10 @@ export default function QuoteMaintainPage() {
     { key: '4', country: '美国', zone: 'SCK1、OAK3、SMF6、FAT2', city: '', price: 6.2, transitDays: 20 },
   ])
 
-  const isExpressDelivery = lastMile === '快递派'
-
-  const handleLastMileChange = (value: string) => {
-    setLastMile(value)
-    if (value === '快递派') {
-      setSupportTransitDays(true)
-      const next = normalizeParseFields([...parseFields, 'transitDays'])
-      setParseFields(next)
-      applyPasteText(pasteText, next)
-    }
+  const inferLastMile = (recordName: string) => {
+    if (recordName.includes('快递派')) return '快递派'
+    if (recordName.includes('卡派')) return '卡派'
+    return '卡车配送'
   }
 
   const parseTransitDays = (value: string) => {
@@ -404,21 +397,15 @@ export default function QuoteMaintainPage() {
             className="quote-action"
             onClick={() => {
             setEditingQuote(record)
-            const inferredLastMile = record.name.includes('快递派')
-              ? '快递派'
-              : record.name.includes('卡派')
-                ? '卡派'
-                : '卡车配送'
-            setLastMile(inferredLastMile)
-            const isExpress = inferredLastMile === '快递派'
-            const hasTransitDays = isExpress || record.supportTransitDays
+            const lastMile = inferLastMile(record.name)
+            const hasTransitDays = record.supportTransitDays
             setSupportTransitDays(hasTransitDays)
             setParseFields(hasTransitDays ? ['country', 'zone', 'city', 'transitDays'] : ['country', 'zone', 'city'])
             setPasteText('')
             form.setFieldsValue({
                 name: record.name,
                 service: record.service,
-                lastMile: inferredLastMile,
+                lastMile,
                 supportTransitDays: hasTransitDays,
               })
               setPriceDrawerOpen(true)
@@ -539,27 +526,15 @@ export default function QuoteMaintainPage() {
                   />
                 </Form.Item>
               </div>
-              <div className="quote-basic-field">
+              <div className="quote-basic-field quote-basic-field-compact">
                 <span className="quote-basic-label">尾程派送:</span>
-                <Select
-                  value={lastMile}
-                  onChange={handleLastMileChange}
-                  options={[
-                    { label: '卡车配送', value: '卡车配送' },
-                    { label: '快递派', value: '快递派' },
-                    { label: '卡派', value: '卡派' },
-                  ]}
-                />
+                <span className="quote-static-text">{editingQuote ? inferLastMile(editingQuote.name) : '卡车配送'}</span>
               </div>
               <div className="quote-basic-field quote-basic-field-compact">
                 <span className="quote-basic-label">启用时效:</span>
-                {isExpressDelivery ? (
-                  <span style={{ color: '#52c41a', fontWeight: 600, fontSize: 13 }}>自动启用（快递派）</span>
-                ) : (
-                  <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
-                    <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
-                  </Form.Item>
-                )}
+                <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
+                  <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
+                </Form.Item>
               </div>
             </div>
           </div>
