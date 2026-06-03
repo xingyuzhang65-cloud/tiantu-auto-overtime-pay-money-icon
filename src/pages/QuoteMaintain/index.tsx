@@ -253,6 +253,7 @@ export default function QuoteMaintainPage() {
     return '卡车配送'
   }
 
+  const isExpressDelivery = editingQuote ? inferLastMile(editingQuote.name) === '快递派' : false
   const showTransitDays = supportTransitDays
 
   const parseTransitDays = (value: string) => {
@@ -542,7 +543,7 @@ export default function QuoteMaintainPage() {
                   <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
                 </Form.Item>
               </div>
-              {supportTransitDays && (
+              {supportTransitDays && isExpressDelivery && (
                 <div className="quote-basic-field" style={{ gridColumn: 'span 2' }}>
                   <span className="quote-basic-label">天数:</span>
                   <InputNumber
