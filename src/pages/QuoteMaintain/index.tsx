@@ -253,8 +253,7 @@ export default function QuoteMaintainPage() {
     return '卡车配送'
   }
 
-  const isExpressDelivery = editingQuote ? inferLastMile(editingQuote.name) === '快递派' : false
-  const showTransitDays = isExpressDelivery || supportTransitDays
+  const showTransitDays = supportTransitDays
 
   const parseTransitDays = (value: string) => {
     const parsedValue = Number(value.replace(/[^\d.]/g, ''))
@@ -537,28 +536,29 @@ export default function QuoteMaintainPage() {
                 <span className="quote-basic-label">尾程派送:</span>
                 <span className="quote-static-text">{editingQuote ? inferLastMile(editingQuote.name) : '卡车配送'}</span>
               </div>
-              <div className="quote-basic-field quote-basic-field-compact" style={{ gridTemplateColumns: '78px auto' }}>
+              <div className="quote-basic-field quote-basic-field-compact">
                 <span className="quote-basic-label">启用时效:</span>
-                <Space size={8} align="center">
-                  <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
-                    <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
-                  </Form.Item>
-                  {supportTransitDays && (
-                    <InputNumber
-                      value={transitDaysInput}
-                      onChange={(val) => {
-                        const num = Number(val)
-                        setTransitDaysInput(Number.isFinite(num) && num > 0 ? Math.round(num) : undefined)
-                      }}
-                      min={1}
-                      step={1}
-                      precision={0}
-                      placeholder="输入天数"
-                      style={{ width: 120 }}
-                    />
-                  )}
-                </Space>
+                <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
+                  <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
+                </Form.Item>
               </div>
+              {supportTransitDays && (
+                <div className="quote-basic-field" style={{ gridColumn: 'span 2' }}>
+                  <span className="quote-basic-label">天数:</span>
+                  <InputNumber
+                    value={transitDaysInput}
+                    onChange={(val) => {
+                      const num = Number(val)
+                      setTransitDaysInput(Number.isFinite(num) && num > 0 ? Math.round(num) : undefined)
+                    }}
+                    min={1}
+                    step={1}
+                    precision={0}
+                    placeholder="请输入天数"
+                    style={{ width: 160 }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
