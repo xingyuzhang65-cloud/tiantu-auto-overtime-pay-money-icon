@@ -237,6 +237,7 @@ export default function QuoteMaintainPage() {
   const [editingQuote, setEditingQuote] = useState<QuoteRecord | null>(null)
   const [supportTransitDays, setSupportTransitDays] = useState(true)
   const [parseFields, setParseFields] = useState<ParseField[]>(['country', 'zone', 'city'])
+  const [transitDaysInput, setTransitDaysInput] = useState<number | undefined>(undefined)
   const [pasteText, setPasteText] = useState('')
   const [rateRows, setRateRows] = useState<RateEditRow[]>([
     { key: '1', country: '美国', zone: 'ONT8、LGB8、LAX9、SBD1', city: '', price: 5.2, transitDays: 12 },
@@ -250,6 +251,9 @@ export default function QuoteMaintainPage() {
     if (recordName.includes('卡派')) return '卡派'
     return '卡车配送'
   }
+
+  const isExpressDelivery = editingQuote ? inferLastMile(editingQuote.name) === '快递派' : false
+  const showTransitDays = isExpressDelivery || supportTransitDays
 
   const parseTransitDays = (value: string) => {
     const parsedValue = Number(value.replace(/[^\d.]/g, ''))
@@ -325,6 +329,7 @@ export default function QuoteMaintainPage() {
   const updateTransitSupport = (checked: boolean) => {
     setSupportTransitDays(checked)
     if (!checked) {
+      setTransitDaysInput(undefined)
       const next = parseFields.filter((field) => field !== 'transitDays')
       setParseFields(next)
       applyPasteText(pasteText, next)
@@ -400,6 +405,7 @@ export default function QuoteMaintainPage() {
             const lastMile = inferLastMile(record.name)
             const hasTransitDays = record.supportTransitDays
             setSupportTransitDays(hasTransitDays)
+            setTransitDaysInput(undefined)
             setParseFields(hasTransitDays ? ['country', 'zone', 'city', 'transitDays'] : ['country', 'zone', 'city'])
             setPasteText('')
             form.setFieldsValue({
@@ -530,11 +536,27 @@ export default function QuoteMaintainPage() {
                 <span className="quote-basic-label">尾程派送:</span>
                 <span className="quote-static-text">{editingQuote ? inferLastMile(editingQuote.name) : '卡车配送'}</span>
               </div>
-              <div className="quote-basic-field quote-basic-field-compact">
+              <div className="quote-basic-field quote-basic-field-compact" style={{ gridTemplateColumns: '78px auto' }}>
                 <span className="quote-basic-label">启用时效:</span>
-                <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
-                  <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
-                </Form.Item>
+                <Space size={8} align="center">
+                  <Form.Item name="supportTransitDays" valuePropName="checked" noStyle>
+                    <Switch checked={supportTransitDays} onChange={updateTransitSupport} />
+                  </Form.Item>
+                  {supportTransitDays && (
+                    <InputNumber
+                      value={transitDaysInput}
+                      onChange={(val) => {
+                        const num = Number(val)
+                        setTransitDaysInput(Number.isFinite(num) && num > 0 ? Math.round(num) : undefined)
+                      }}
+                      min={1}
+                      step={1}
+                      precision={0}
+                      placeholder="输入天数"
+                      style={{ width: 120 }}
+                    />
+                  )}
+                </Space>
               </div>
             </div>
           </div>
@@ -565,7 +587,7 @@ export default function QuoteMaintainPage() {
                     { title: '单价', dataIndex: 'price', width: 120 },
                   ],
                 },
-                ...(supportTransitDays ? [{
+                ...(showTransitDays ? [{
                   title: '时效',
                   dataIndex: 'transitDays',
                   width: 120,
@@ -595,7 +617,7 @@ export default function QuoteMaintainPage() {
                     { title: '单价', dataIndex: 'price', width: 120 },
                   ],
                 },
-                ...(supportTransitDays ? [{
+                ...(showTransitDays ? [{
                   title: '时效',
                   dataIndex: 'transitDays',
                   width: 120,
@@ -686,7 +708,7 @@ export default function QuoteMaintainPage() {
               >
                 城市
               </Checkbox>
-              {supportTransitDays && (
+              {showTransitDays && (
                 <Checkbox
                   checked={parseFields.includes('transitDays')}
                   onChange={(event) => updateParseField('transitDays', event.target.checked)}
@@ -721,7 +743,7 @@ export default function QuoteMaintainPage() {
 
           <EditableRateTable
             rows={rateRows}
-            supportTransitDays={supportTransitDays}
+            supportTransitDays={showTransitDays}
             onChange={updateRateRow}
             parseTransitDays={parseTransitDays}
           />
@@ -736,7 +758,7 @@ export default function QuoteMaintainPage() {
           <EditableRateTable
             rows={[]}
             emptyText="暂无数据"
-            supportTransitDays={supportTransitDays}
+            supportTransitDays={showTransitDays}
             onChange={updateRateRow}
             parseTransitDays={parseTransitDays}
           />
