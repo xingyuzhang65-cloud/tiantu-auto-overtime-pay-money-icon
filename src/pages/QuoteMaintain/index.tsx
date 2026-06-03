@@ -51,7 +51,7 @@ interface RateEditRow {
 const quoteData: QuoteRecord[] = [
   {
     key: '1',
-    name: 'YJDF-整柜-洛杉矶CLX13日达-LA01仓NBS',
+    name: 'YJDF-整柜-洛杉矶CLX13日达-LA01仓NBS-卡派',
     service: 'YJDF-整柜-洛杉矶CLX13日达-LA01仓NBS',
     createTime: '2026-05-20 12:34:47',
     creator: '天杰',
@@ -61,7 +61,7 @@ const quoteData: QuoteRecord[] = [
   },
   {
     key: '2',
-    name: 'YJDF-整柜-洛杉矶MAX14日达-LA01仓NBS',
+    name: 'YJDF-整柜-洛杉矶MAX14日达-LA01仓NBS-卡派',
     service: 'YJDF-整柜-洛杉矶MAX14日达-LA01仓NBS',
     createTime: '2026-05-20 12:34:31',
     creator: '天杰',
@@ -71,7 +71,7 @@ const quoteData: QuoteRecord[] = [
   },
   {
     key: '3',
-    name: 'YJDF-整柜-洛杉矶EXX16日达-LA01仓NBS',
+    name: 'YJDF-整柜-洛杉矶EXX16日达-LA01仓NBS-卡派',
     service: 'YJDF-整柜-洛杉矶EXX16日达-LA01仓NBS',
     createTime: '2026-05-20 12:34:15',
     creator: '天杰',
@@ -101,7 +101,7 @@ const quoteData: QuoteRecord[] = [
   },
   {
     key: '6',
-    name: '美转加CLX加西16日达-加拿大卡尔加里商业/私人地址',
+    name: '美转加CLX加西16日达-加拿大卡尔加里商业/私人地址-卡派',
     service: '美转加CLX加西16日达-加拿大卡尔加里商业/私人地址',
     createTime: '2026-05-19 21:20:53',
     creator: '天杰',
@@ -111,7 +111,7 @@ const quoteData: QuoteRecord[] = [
   },
   {
     key: '7',
-    name: '美转加DFMAX17日达-加拿大卡尔加里商业/私人地址',
+    name: '美转加DFMAX17日达-加拿大卡尔加里商业/私人地址-卡派',
     service: '美转加DFMAX17日达-加拿大卡尔加里商业/私人地址',
     createTime: '2026-05-19 21:20:08',
     creator: '天杰',
@@ -121,13 +121,13 @@ const quoteData: QuoteRecord[] = [
   },
   {
     key: '8',
-    name: '美转加DFMAX17日达-加拿大多伦多商业/私人地址',
+    name: '美转加DFMAX17日达-加拿大多伦多商业/私人地址-快递派',
     service: '美转加DFMAX17日达-加拿大多伦多商业/私人地址',
     createTime: '2026-05-19 21:17:28',
     creator: '天杰',
     updateTime: '2026-05-19 21:26:31',
     updater: '天翰',
-    supportTransitDays: true,
+    supportTransitDays: false,
   },
   {
     key: '9',
@@ -248,6 +248,7 @@ export default function QuoteMaintainPage() {
 
   const inferLastMile = (recordName: string) => {
     if (recordName.includes('快递派')) return '快递派'
+    if (recordName.includes('UPS派')) return '快递派'
     if (recordName.includes('卡派')) return '卡派'
     return '卡车配送'
   }
