@@ -254,7 +254,7 @@ export default function QuoteMaintainPage() {
   }
 
   const isExpressDelivery = editingQuote ? inferLastMile(editingQuote.name) === '快递派' : false
-  const showTransitDays = supportTransitDays
+  const showTransitDaysColumn = supportTransitDays && !isExpressDelivery
 
   const parseTransitDays = (value: string) => {
     const parsedValue = Number(value.replace(/[^\d.]/g, ''))
@@ -589,7 +589,7 @@ export default function QuoteMaintainPage() {
                     { title: '单价', dataIndex: 'price', width: 120 },
                   ],
                 },
-                ...(showTransitDays ? [{
+                ...(showTransitDaysColumn ? [{
                   title: '时效',
                   dataIndex: 'transitDays',
                   width: 120,
@@ -619,7 +619,7 @@ export default function QuoteMaintainPage() {
                     { title: '单价', dataIndex: 'price', width: 120 },
                   ],
                 },
-                ...(showTransitDays ? [{
+                ...(showTransitDaysColumn ? [{
                   title: '时效',
                   dataIndex: 'transitDays',
                   width: 120,
@@ -710,7 +710,7 @@ export default function QuoteMaintainPage() {
               >
                 城市
               </Checkbox>
-              {showTransitDays && (
+              {showTransitDaysColumn && (
                 <Checkbox
                   checked={parseFields.includes('transitDays')}
                   onChange={(event) => updateParseField('transitDays', event.target.checked)}
@@ -745,7 +745,7 @@ export default function QuoteMaintainPage() {
 
           <EditableRateTable
             rows={rateRows}
-            supportTransitDays={showTransitDays}
+            supportTransitDays={showTransitDaysColumn}
             onChange={updateRateRow}
             parseTransitDays={parseTransitDays}
           />
@@ -760,7 +760,7 @@ export default function QuoteMaintainPage() {
           <EditableRateTable
             rows={[]}
             emptyText="暂无数据"
-            supportTransitDays={showTransitDays}
+            supportTransitDays={showTransitDaysColumn}
             onChange={updateRateRow}
             parseTransitDays={parseTransitDays}
           />
