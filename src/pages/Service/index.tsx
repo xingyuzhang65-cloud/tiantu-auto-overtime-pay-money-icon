@@ -67,6 +67,7 @@ interface ServiceRecord {
   timeEndNode: string
   promiseDays: number
   storageLocations: string
+  tradeMethod?: string
   timePromiseConfigs?: TimePromiseConfig[]
 }
 
@@ -269,6 +270,8 @@ export default function ServiceList() {
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [batchTimeModalOpen, setBatchTimeModalOpen] = useState(false)
+  const [batchEditModalOpen, setBatchEditModalOpen] = useState(false)
+  const [batchTradeMethod, setBatchTradeMethod] = useState<string | undefined>(undefined)
   const [uploadResult, setUploadResult] = useState<{ success: number; fail: number; errors: string[] } | null>(null)
   const tableRef = useRef<any>(null)
 
@@ -425,6 +428,36 @@ export default function ServiceList() {
   const closeBatchTimeModal = () => {
     setBatchTimeModalOpen(false)
     setUploadResult(null)
+  }
+
+  const openBatchEditModal = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择服务')
+      return
+    }
+    setBatchTradeMethod(undefined)
+    setBatchEditModalOpen(true)
+  }
+
+  const closeBatchEditModal = () => {
+    setBatchEditModalOpen(false)
+    setBatchTradeMethod(undefined)
+  }
+
+  const handleBatchEditConfirm = () => {
+    if (!batchTradeMethod) {
+      message.warning('请选择贸易方式')
+      return
+    }
+    setData((prev) =>
+      prev.map((item) =>
+        selectedRowKeys.includes(item.key)
+          ? { ...item, tradeMethod: batchTradeMethod }
+          : item
+      )
+    )
+    message.success(`已成功修改 ${selectedRowKeys.length} 个服务的贸易方式`)
+    closeBatchEditModal()
   }
 
   const handleBatchCloseTime = () => {
@@ -619,7 +652,7 @@ export default function ServiceList() {
             getPopupContainer={(trigger) => trigger.parentElement || document.body}
             menu={{
               items: [
-                { key: 'batch-edit', icon: <EditOutlined />, label: '批量修改服务信息' },
+                { key: 'batch-edit', icon: <EditOutlined />, label: '批量修改贸易方式', onClick: () => openBatchEditModal() },
                 {
                   key: 'batch-time',
                   icon: <ClockCircleOutlined />,
@@ -737,6 +770,36 @@ export default function ServiceList() {
             <DownloadOutlined style={{ marginRight: 4 }} />
             下载模板
           </a>
+        </Modal>
+
+        {/* 批量修改贸易方式弹窗 */}
+        <Modal
+          title="批量修改贸易方式"
+          open={batchEditModalOpen}
+          onCancel={closeBatchEditModal}
+          width={480}
+          destroyOnClose
+          footer={[
+            <Button key="cancel" onClick={closeBatchEditModal}>取消</Button>,
+            <Button key="confirm" type="primary" onClick={handleBatchEditConfirm}>确认</Button>,
+          ]}
+        >
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
+              已选择 <b>{selectedRowKeys.length}</b> 个服务，请选择要修改的贸易方式：
+            </div>
+            <Select
+              placeholder="请选择贸易方式"
+              style={{ width: '100%' }}
+              value={batchTradeMethod}
+              onChange={setBatchTradeMethod}
+            >
+              <Select.Option value="FOB">FOB</Select.Option>
+              <Select.Option value="CIF">CIF</Select.Option>
+              <Select.Option value="EXW">EXW</Select.Option>
+              <Select.Option value="DAP">DAP</Select.Option>
+            </Select>
+          </div>
         </Modal>
       </div>
   )
