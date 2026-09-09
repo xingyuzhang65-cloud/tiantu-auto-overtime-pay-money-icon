@@ -46,12 +46,11 @@ interface WaybillRecord {
   trackingNo: string
   status: string
   createTime: string
-  isOvertime?: boolean
   timeoutInfo?: {
     startNode: string
     endNode: string
     promiseDays: number
-    actualDays: number
+    actualDays: number | null
   }
 }
 
@@ -73,7 +72,6 @@ const mockData: WaybillRecord[] = [
     trackingNo: 'COSU1234567890',
     status: '运输中',
     createTime: '2026-05-15 08:30:00',
-    isOvertime: true,
     timeoutInfo: { startNode: '出运', endNode: '提取', promiseDays: 18, actualDays: 22 },
   },
   {
@@ -93,6 +91,7 @@ const mockData: WaybillRecord[] = [
     trackingNo: 'UPS1234567890',
     status: '已签收',
     createTime: '2026-05-14 16:20:00',
+    timeoutInfo: { startNode: '揽收', endNode: '签收', promiseDays: 7, actualDays: 5 },
   },
   {
     key: '3',
@@ -111,6 +110,7 @@ const mockData: WaybillRecord[] = [
     trackingNo: 'MAEU9876543210',
     status: '待发货',
     createTime: '2026-05-15 10:00:00',
+    timeoutInfo: { startNode: '出运', endNode: '入仓', promiseDays: 25, actualDays: null },
   },
   {
     key: '4',
@@ -129,7 +129,6 @@ const mockData: WaybillRecord[] = [
     trackingNo: 'MSCU1122334455',
     status: '已揽收',
     createTime: '2026-05-15 09:15:00',
-    isOvertime: true,
     timeoutInfo: { startNode: '开船', endNode: '入仓', promiseDays: 25, actualDays: 30 },
   },
   {
@@ -222,7 +221,7 @@ export default function WaybillList() {
       key: 'mark',
       width: 110,
       render: (_mark: string, record: WaybillRecord) => {
-        if (record.isOvertime && record.timeoutInfo) {
+        if (record.timeoutInfo && record.timeoutInfo.actualDays !== null && record.timeoutInfo.actualDays > record.timeoutInfo.promiseDays) {
           return (
             <Tooltip
               title={
@@ -233,12 +232,42 @@ export default function WaybillList() {
               }
             >
               <Tag color="red" style={{ fontSize: 13, padding: '2px 8px', fontWeight: 600, cursor: 'pointer' }}>
-                超时赔付
+                超时
               </Tag>
             </Tooltip>
           )
         }
         return <span style={{ color: '#ccc' }}>-</span>
+      },
+    },
+    {
+      title: '承诺时效',
+      key: 'promiseDays',
+      width: 110,
+      render: (_, record) => record.timeoutInfo?.promiseDays != null ? (
+        <Tooltip title={`监控区间：${record.timeoutInfo.startNode} → ${record.timeoutInfo.endNode}`}>
+          <span style={{ cursor: 'help' }}>{record.timeoutInfo.promiseDays} 天</span>
+        </Tooltip>
+      ) : null,
+    },
+    {
+      title: '实际时效',
+      key: 'actualDays',
+      width: 110,
+      render: (_, record) => {
+        const info = record.timeoutInfo
+        return info?.actualDays != null ? `${info.actualDays} 天` : null
+      },
+    },
+    {
+      title: '超时天数',
+      key: 'overdueDays',
+      width: 110,
+      render: (_, record) => {
+        const info = record.timeoutInfo
+        if (info?.actualDays == null || info.promiseDays == null) return null
+        const overdueDays = info.actualDays - info.promiseDays
+        return overdueDays > 0 ? `${overdueDays} 天` : '未超时'
       },
     },
     {
@@ -356,7 +385,7 @@ export default function WaybillList() {
           <div className="filter-item">
             <span className="filter-label">标识</span>
             <Select placeholder="请选择标识" style={{ width: 160 }} allowClear>
-              <Select.Option value="超时赔付">超时赔付</Select.Option>
+              <Select.Option value="超时">超时</Select.Option>
             </Select>
           </div>
           <div className="filter-item">
@@ -407,7 +436,7 @@ export default function WaybillList() {
             rowSelection={rowSelection}
             columns={columns}
             dataSource={mockData}
-            scroll={{ x: 2100 }}
+            scroll={{ x: 2430 }}
             pagination={{
               total: 865,
               pageSize: 100,
